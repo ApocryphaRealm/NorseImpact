@@ -1,0 +1,7 @@
+Reason: NorseImpact 0.1.0 played the game's own blood effects and a hit sound, a hit-stop and slow motion by rule, from NorseEvents hits and deaths, and restored the game speed each time.
+Batch B-20261117-225034-a2da, 2026-11-17 22:51-22:58 (Main Agent). Two launches.
+- Launch 1: 5 rules; "[Test broken condition] When does not compile: unknown condition 'Healt' (at character 1)". Enemy hurt by the hero (UnitDamaged): [Blood on every hit] NS_Blood_Slice spawned + "game speed 0.05 for 0.05 s" ... "game speed back to 1"; [Test sound on enemy hits] Ms_PunchAbility played. Enemy killed (UnitDied): [A burst on a killing blow] NS_Blood_Burst_Omni - a large blood burst on the victim in the screenshot (docs/shot-2-kill.png); "Test slow motion on an enemy death: game speed 0.30 for 0.80 s" then back to 1.
+- Found: blood at map load, before any fight - the game setting a unit's starting health comes through as UnitDamaged (24 -> 12). The default rules now have When = InFight. The broken-condition error repeated at each map load - now reported once.
+- Launch 2 (both fixes): before the fight no blood (only the test sound rule, which has no InFight); the error once; a hit in the fight: blood + hit-stop + speed restored.
+- Every engine call checked its parameter block against the engine's size first (PlaySoundAtLocation 112, SpawnSystemAtLocation 104, SetGlobalTimeDilation 12) - none refused.
+- Not exercised: Cascade (P_) effects, Payload:<name> triggers, Chance, MinDamage above 1.

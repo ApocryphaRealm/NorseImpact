@@ -9,3 +9,7 @@
 
 ### Fixed (2026-11-18, refinement)
 - Conditions are compiled from the first map load on, not at start-up (they no longer depend on loading after NorseConditions).
+### Fixed (2026-11-18, retrospective)
+- A cached effect or sound is checked alive before each use and loaded again if the garbage collector took it
+  during the map; the slow-motion restore no longer calls through the hit unit once it is gone (it uses the game
+  state instead). Found by the new cached-pointer source gate (2026-11-18); built, not yet tested in game.

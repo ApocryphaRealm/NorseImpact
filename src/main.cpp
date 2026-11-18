@@ -174,12 +174,19 @@ namespace
         }
     }
 
-    std::map<std::wstring, UObject*> g_assets; // loaded effects and sounds; cleared at each map load (a stale pointer never survives)
+    // loaded effects and sounds with their object-array slot: a cached asset the garbage collector took during the map
+    // is loaded again (checked alive on each use); cleared at each map load
+    std::map<std::wstring, std::pair<UObject*, int32_t>> g_assets; // alive-checked in LoadAsset (slot kept beside each)
 
     UObject* LoadAsset(const std::wstring& path)
     {
         auto& cache = g_assets;
-        if (auto it = cache.find(path); it != cache.end()) return it->second;
+        if (auto it = cache.find(path); it != cache.end())
+        {
+            if (!it->second.first) return nullptr; // did not load before - not tried again this map
+            if (Alive(it->second.first, it->second.second)) return it->second.first;
+            NRN_INFO("asset %s was collected since it was loaded - loading it again", Narrow(path).c_str());
+        }
         UObject* o = Cdo(path.c_str());
         if (!o)
         {
@@ -212,7 +219,7 @@ namespace
             }
         }
         if (!o) NRN_WARN("asset %s did not load", Narrow(path).c_str());
-        cache[path] = o;
+        cache[path] = {o, o ? IndexOf(o) : -1};
         return o;
     }
 
@@ -290,7 +297,8 @@ namespace
     }
 
     // ------------------------------------------------------------------ time (hit-stop / slow motion, restored in real time)
-    UObject* g_timeCtx = nullptr;
+    UObject* g_timeCtx = nullptr; // the unit hit: alive-checked via g_timeCtxIx (it can be destroyed before speed is restored)
+    int32_t g_timeCtxIx = -1;
     double g_restoreAt = 0;
 
     double Now()
@@ -304,6 +312,7 @@ namespace
         if (SetTimeDilation(ctx, speed))
         {
             g_timeCtx = ctx;
+            g_timeCtxIx = IndexOf(ctx);
             g_restoreAt = std::max(g_restoreAt, Now() + seconds);
             NRN_INFO("%s: game speed %.2f for %.2f s", why, speed, seconds);
         }
@@ -313,7 +322,23 @@ namespace
     {
         if (g_restoreAt > 0 && Now() >= g_restoreAt)
         {
-            SetTimeDilation(g_timeCtx, 1.f);
+            UObject* ctx = Alive(g_timeCtx, g_timeCtxIx) ? g_timeCtx : nullptr;
+            if (!ctx)
+            {
+                // the unit is gone: any live game state of the world is a world context for the same call
+                std::vector<UObject*> gs;
+                try
+                {
+                    RC::Unreal::UObjectGlobals::FindAllOf(L"GameStateBase", gs);
+                }
+                catch (...)
+                {
+                }
+                for (UObject* o : gs)
+                    if (Alive(o, IndexOf(o)) && o->GetFullName(nullptr).find(L"Default__") == std::wstring::npos) ctx = o;
+                NRN_INFO("game speed: the slowed unit is gone - restoring through %s", ctx ? "the game state" : "nothing (no world context)");
+            }
+            if (ctx) SetTimeDilation(ctx, 1.f);
             NRN_INFO("game speed back to 1");
             g_restoreAt = 0;
         }

@@ -60,6 +60,7 @@ namespace
     using NcEvalFn = int (*)(int, void*, void*);
     NcCompileFn g_ncCompile = nullptr;
     NcEvalFn g_ncEval = nullptr;
+    bool g_mapUp = false; // set at the first map load; conditions are compiled from then on
 
     template <typename F>
     F ModExport(const wchar_t* mod, const char* name)
@@ -157,7 +158,7 @@ namespace
                       }),
                       g_rules.end());
         NRN_INFO("impacts: %zu rule(s) from %zu file(s)", g_rules.size(), files.size());
-        CompileConditions();
+        if (g_mapUp) CompileConditions(); // not at start-up: NorseConditions may not have registered its conditions yet (NorseAnimSwap 0.1.0)
     }
 
     // ------------------------------------------------------------------ engine calls (checked parameter blocks)
@@ -437,6 +438,7 @@ class NorseImpact : public RC::CppUserModBase
         try
         {
             RC::Unreal::Hook::RegisterInitGameStatePostCallback([](RC::Unreal::AGameModeBase*) {
+                g_mapUp = true;
                 Subscribe();
                 CompileConditions(); // NorseConditions may have loaded after this mod
                 if (g_restoreAt > 0)

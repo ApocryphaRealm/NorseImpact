@@ -6,3 +6,6 @@
 - Defaults: blood and a 0.05 s hit-stop on hits in a fight, a blood burst on a kill.
 ### Fixed (during the first test)
 - Defaults only in a fight (the game sets units up at map load through the same health change); a broken condition reported once.
+
+### Fixed (2026-11-18, refinement)
+- Conditions are compiled from the first map load on, not at start-up (they no longer depend on loading after NorseConditions).

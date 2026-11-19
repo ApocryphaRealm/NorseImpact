@@ -27,3 +27,7 @@ refused, with a log line, if the engine changed. Game speed is restored in real 
 0.1.0 tested in game (TEST-RESULT-0.1.0.txt). Not yet: Cascade effects and Payload triggers in game, camera shake,
 damage numbers. Build: `xmake f -p windows -a x64 -m release --toolchain=msvc -y`, then `xmake` (needs
 `../NorsePatcher`, `../NorseManifest`, `../NorseEvents`).
+
+## Licence
+
+GPL-3.0-or-later (see LICENSE).
